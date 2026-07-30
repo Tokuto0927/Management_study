@@ -1,1 +1,1 @@
-# Management_study
+# マネージメント系学習ノート
