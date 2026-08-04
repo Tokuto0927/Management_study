@@ -66,31 +66,45 @@ function parseAnswers(markdown) {
 }
 
 async function loadQuiz() {
-  const [questionResponse, answerResponse] = await Promise.all([
+  const [questionResponse, answerResponse, advancedQuestionResponse, advancedAnswerResponse] = await Promise.all([
     fetch("../CPE模擬問題集.md"),
     fetch("../CPE模擬問題集_解答解説.md"),
+    fetch("../CPE模擬問題集_上級編.md"),
+    fetch("../CPE模擬問題集_上級編_解答解説.md"),
   ]);
-  if (!questionResponse.ok || !answerResponse.ok) throw new Error("問題ファイルを読み込めませんでした。");
+  if ([questionResponse, answerResponse, advancedQuestionResponse, advancedAnswerResponse].some((response) => !response.ok)) {
+    throw new Error("問題ファイルを読み込めませんでした。");
+  }
 
-  const questions = parseQuestions(await questionResponse.text());
-  const parsedAnswers = parseAnswers(await answerResponse.text());
-  state.allQuestions = questions.map((question) => ({
+  const buildBank = (questions, parsedAnswers, bank) => questions.map((question) => ({
     ...question,
+    bank,
     answer: parsedAnswers.answers.get(question.number),
     explanation: parsedAnswers.explanations.get(question.number),
   }));
-  if (state.allQuestions.length !== 100 || state.allQuestions.some((q) => !q.answer || !q.explanation)) {
+  const standardQuestions = parseQuestions(await questionResponse.text());
+  const standardAnswers = parseAnswers(await answerResponse.text());
+  const advancedQuestions = parseQuestions(await advancedQuestionResponse.text());
+  const advancedAnswers = parseAnswers(await advancedAnswerResponse.text());
+  state.allQuestions = [
+    ...buildBank(standardQuestions, standardAnswers, "standard"),
+    ...buildBank(advancedQuestions, advancedAnswers, "advanced"),
+  ];
+  if (state.allQuestions.length !== 150 || state.allQuestions.some((q) => !q.answer || !q.explanation || q.options.length !== 4)) {
     throw new Error("問題・解答・解説の対応に不整合があります。");
   }
-  $("load-status").textContent = "100問を読み込みました。";
+  $("load-status").textContent = "標準100問・上級50問を読み込みました。";
   $("start-button").disabled = false;
 }
 
 function beginQuiz(customQuestions = null) {
+  const bank = $("bank-select").value;
   const chapter = $("chapter-select").value;
   const requested = Number($("count-select").value);
   const randomize = $("shuffle-check").checked;
-  let pool = customQuestions || state.allQuestions.filter((q) => chapter === "all" || q.chapter === Number(chapter));
+  let pool = customQuestions || state.allQuestions.filter((q) =>
+    q.bank === bank && (chapter === "all" || q.chapter === Number(chapter))
+  );
   if (randomize) pool = shuffle(pool);
   const count = Math.min(requested, pool.length);
   state.questions = pool.slice(0, count);
@@ -98,7 +112,7 @@ function beginQuiz(customQuestions = null) {
   state.score = 0;
   state.mistakes = [];
   state.answered = false;
-  state.settings = { chapter, requested, randomize };
+  state.settings = { bank, chapter, requested, randomize };
   showScreen($("quiz-screen"));
   renderQuestion();
 }

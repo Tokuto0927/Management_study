@@ -12,12 +12,19 @@
     <header class="hero">
       <p class="eyebrow">PROJECT MANAGEMENT</p>
       <h1>CPE 模擬クイズ</h1>
-      <p>全100問から、理解度をテンポよく確認できます。</p>
+      <p>標準100問と上級50問で、理解度を段階的に確認できます。</p>
     </header>
 
     <section id="start-screen" class="panel">
       <h2>出題設定</h2>
       <div class="settings-grid">
+        <label>
+          問題セット
+          <select id="bank-select">
+            <option value="standard">標準編（100問）</option>
+            <option value="advanced">上級編（50問）</option>
+          </select>
+        </label>
         <label>
           出題範囲
           <select id="chapter-select">
@@ -74,6 +81,6 @@
       </div>
     </section>
   </main>
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
